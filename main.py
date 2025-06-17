@@ -61,7 +61,7 @@ def load_config():
     }
 
     default_rank = {
-        "total_maps": "526",
+        "total_maps": "621",
         "kacky_color": "positive"
     }
 
@@ -217,26 +217,34 @@ def load_map_settings():
     config = configparser.ConfigParser()
     if os.path.exists(CONFIG_PATH):
         config.read(CONFIG_PATH, encoding="utf-8")
-        total_maps = config.getint("Rank", "total_maps", fallback=526)
+        total_maps = config.getint("Rank", "total_maps", fallback=621)
         kacky_color = config.get("Rank", "kacky_color", fallback="positive").strip().lower()
-        if kacky_color not in ["positive", "negative"]:
+        
+        if kacky_color not in ["positive", "negative", "og"]:
             kacky_color = "positive"
             config.set("Rank", "kacky_color", "positive")
 
             with open(CONFIG_PATH, "w", encoding="utf-8") as f:
                 config.write(f)
 
-        is_positive = kacky_color == "positive"
-        return total_maps, is_positive
+        return total_maps, kacky_color
 
-    return 526, True  # 기본값
+    return 621, "positive"  # 기본값
 
-def get_rank_and_color(count, total, is_positive=True):
+def get_rank_and_color(count, total, kacky_color="positive"):
     kacky_positive_colors = ["#aa0000", "#aa0000", "#aa6600", "#aaaa00", "#00aa00"]
     kacky_negative_colors = ["#aa0066", "#aa0066", "#aa3300", "#aa6600", "#ff4400"]
+    kacky_og_colors = ["#555500", "#bbff00", "#bbff00", "#bbff00", "#555500"]
+
+    if kacky_color == "og":
+        kacky_colors = kacky_og_colors
+    elif kacky_color == "negative":
+        kacky_colors = kacky_negative_colors
+    else:
+        kacky_colors = kacky_positive_colors
 
     thresholds = [
-        (math.ceil(total * 1.0), "kacky", kacky_positive_colors if is_positive else kacky_negative_colors),
+        (math.ceil(total * 1.0), "kacky", kacky_colors),
         (math.ceil(total * 0.866666), "gold", "#ffdd00"),
         (math.ceil(total * 0.666666), "silver", "#cccccc"),
         (math.ceil(total * 0.333333), "bronze", "#cc8844"),
@@ -418,8 +426,8 @@ def get_username():
                         clear_count = len([line for line in file if line.strip()])
 
                 # ✅ 전체 맵 수 및 색상 가져오기
-                total_maps, is_positive = load_map_settings()
-                rank_name, rank_color = get_rank_and_color(clear_count, total_maps, is_positive)
+                total_maps, kacky_color = load_map_settings()
+                rank_name, rank_color = get_rank_and_color(clear_count, total_maps, kacky_color)
 
                 if rank_name == "kacky" and isinstance(rank_color, list):
                     symbols = ["["] + list(str(clear_count)) + ["]", " "]
@@ -556,7 +564,7 @@ def check_list():
         "Content-Type": "application/json"
     }
 
-    webhook_url = "https://script.google.com/macros/s/AKfycbyQsuyDAC-hwbrFuuOWu4uL8FNl1ryKgMuGFeqCoXZvtweCSlX_nj1zyfS4sGeERbGK/exec"
+    webhook_url = "https://script.google.com/macros/s/AKfycbwLszfvb8WKO17Ub24S0cHfIJuA6IC54Lg2DlS3ttKAvYdFwGC7xRhX1jsvB5OUjNpi/exec"
 
     response = requests.post(webhook_url, json=payload, headers=headers)  # headers 추가
 
