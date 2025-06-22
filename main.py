@@ -564,7 +564,7 @@ def check_list():
         "Content-Type": "application/json"
     }
 
-    webhook_url = "https://script.google.com/macros/s/AKfycbwLszfvb8WKO17Ub24S0cHfIJuA6IC54Lg2DlS3ttKAvYdFwGC7xRhX1jsvB5OUjNpi/exec"
+    webhook_url = "https://script.google.com/macros/s/AKfycbz85L5C0_51IRfgD5MDD9YpAu9L4o_hJUUBzVug3j0InI-0FP-IleZJzAGxdmcAYHSp/exec"
 
     response = requests.post(webhook_url, json=payload, headers=headers)  # headers 추가
 
