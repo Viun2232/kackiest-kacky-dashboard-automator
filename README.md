@@ -17,8 +17,8 @@ It also includes features such as accessing user pages, connecting to the LIS sp
 > <a href="https://www.flaticon.com/kr/free-icon/globe_12871678?term=%EC%A7%80%EA%B5%AC&page=1&position=25&origin=tag&related_id=12871678" title="globe">globe: SumberRejeki - Flaticon</a>  
 > <a href="https://www.flaticon.com/kr/free-icon/settings_667416" title="settings">settings: Freepik - Flaticon</a>
 
-### Installation
-Download the latest `Kacky-Dashboard-Automator.zip` file from the **Release** tab on the left and extract it.
+## Installation
+Download the latest version of `Kacky-Dashboard-Automator.zip` file from the **[Release](https://github.com/Viun2232/kackiest-kacky-dashboard-automator/releases)** tab on the left and extract it.
 
 ## How to use
 ### Get the pid
@@ -49,6 +49,14 @@ Then change the role to **Editor**.
 
 6. Click the run button.
 
+## Config
+* language = `en`, `kr`
+* event = `Kackiest Kacky (TMNF)`, `Kacky Reloaded (TM2020)`
+* kacky_color = `positive`, `negative`, `reloaded`, `og`
+
+## 설치
+왼쪽 **[Release](https://github.com/Viun2232/kackiest-kacky-dashboard-automator/releases)** 탭에서 가장 최신 버전의 `Kacky-Dashboard-Automator.zip` 파일을 다운받고 압축 해제 하세요.
+
 ## 사용 방법
 ### PID 가져오기
 1. Kacky 웹사이트에 접속하여 자신의 닉네임을 검색하거나 수동으로 찾습니다.  
@@ -76,3 +84,8 @@ Then change the role to **Editor**.
 5. 프로그램에 SHEET ID를 입력합니다.
 
 6. 실행 버튼을 클릭합니다.
+
+## 구성
+* language = `en`, `kr`
+* event = `Kackiest Kacky (TMNF)`, `Kacky Reloaded (TM2020)`
+* kacky_color = `positive`, `negative`, `reloaded`, `og`
