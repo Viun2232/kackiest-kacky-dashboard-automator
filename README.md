@@ -8,7 +8,7 @@ It is a program that retrieves a user's name, cleared maps, ranking, and record 
 It also includes features such as accessing user pages, connecting to the LIS spreadsheet, and comparing rankings with friends.
 
 ### Source
-#### Spreadsheet (by. Zemus42)
+#### Spreadsheet (by. zemus42)
 > [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
 > [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
 
