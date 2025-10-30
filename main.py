@@ -1,4 +1,4 @@
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
@@ -26,21 +26,58 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 CONFIG_PATH = os.path.join(BASE_DIR, "config.ini")
-MAP_RECORDS_PATH = os.path.join(BASE_DIR, "map_records.txt")
-README_PATH = os.path.join(BASE_DIR, "README.txt")
-REQUIREMENTS_PATH = os.path.join(BASE_DIR, "requirements.txt")
-FIRST_RUN_FLAG_PATH = os.path.join(BASE_DIR, "first_run.flag")
-FRIENDS_PATH = os.path.join(BASE_DIR, "friends.ini")
+README_PATH = os.path.join(BASE_DIR, "README.md")
 
 if getattr(sys, 'frozen', False):
-    BASE_DIR = sys._MEIPASS
+    ASSET_DIR = sys._MEIPASS
 else:
-    BASE_DIR = os.path.dirname(__file__)
+    ASSET_DIR = os.path.dirname(os.path.abspath(__file__))
 
-LOGO_PATH = os.path.join(BASE_DIR, "logo.png")
-ICON_PATH = os.path.join(BASE_DIR, "KDA.ico")
-LANG_IMG_PATH = os.path.join(BASE_DIR, "lang.png")
-STOP_IMG_PATH = os.path.join(BASE_DIR, "stop.png")
+LOGO_PATH = os.path.join(ASSET_DIR, "logo.png")
+ICON_PATH = os.path.join(ASSET_DIR, "KDA.ico")
+LANG_IMG_PATH = os.path.join(ASSET_DIR, "lang.png")
+STOP_IMG_PATH = os.path.join(ASSET_DIR, "stop.png")
+SET_IMG_PATH = os.path.join(ASSET_DIR, "set.png")
+
+# Event 선택 옵션 & 도메인 매핑
+EVENT_OPTIONS = ["Kackiest Kacky (TMNF)", "Kacky Reloaded (TM2020)"]
+EVENT_DOMAINS = {
+    "Kackiest Kacky (TMNF)": "https://kackiestkacky.com",
+    "Kacky Reloaded (TM2020)": "https://kackyreloaded.com",
+}
+
+def map_records_path():
+    return os.path.join(BASE_DIR, f"map_records_{get_event_key()}.txt")
+
+def friends_path():
+    return os.path.join(BASE_DIR, f"friends_{get_event_key()}.ini")
+
+# 현재 선택된 Event에 따른 베이스 도메인 반환
+def get_base_domain():
+    try:
+        value = event_var.get().strip()
+    except:
+        # 초기 로드/테스트 중 event_var가 없을 수도 있으므로 안전 장치
+        value = "Kackiest Kacky (TMNF)"
+    return EVENT_DOMAINS.get(value, "https://kackiestkacky.com")
+
+# 이벤트 키(kk/kr) 유틸
+def get_event_key():
+    v = event_var.get().strip() if 'event_var' in globals() else "Kackiest Kacky (TMNF)"
+    if "Reloaded" in v or "2020" in v:
+        return "kr"   # Kacky Reloaded
+    return "kk"        # Kackiest Kacky
+
+# KR 대응: RecordsMaps 안의 <br>/개행/공백을 정규화해서 '숫자 리스트'로 변환
+def normalize_ranks(text: str) -> list[str]:
+    if not text:
+        return []
+    # HTML 줄바꿈 → 구분자
+    text = text.replace("<br/>", ",").replace("<br />", ",").replace("<br>", ",")
+    # 개행/탭 → 구분자
+    text = text.replace("\r\n", ",").replace("\n", ",").replace("\t", ",")
+    # 최종: 모든 숫자 토큰을 순서대로 추출 (예: "20 , 6" / "20\n6" / "20<br>6" → ["20","6"])
+    return re.findall(r"\d+", text)
 
 # config.ini 파일 로드
 def load_config():
@@ -49,9 +86,12 @@ def load_config():
 
     # 기본값 정의
     default_settings = {
-        "pid": "",
-        "sheet_id": "",
-        "language": "en"
+        "event": "Kackiest Kacky (TMNF)",
+        "pid_kk": "",
+        "sheet_id_kk": "",
+        "pid_kr": "",
+        "sheet_id_kr": "",
+        "language": "en",
     }
 
     default_shortcuts = {
@@ -61,8 +101,10 @@ def load_config():
     }
 
     default_rank = {
-        "total_maps": "621",
-        "kacky_color": "positive"
+        "total_maps_kk": "621",
+        "total_maps_kr": "450",
+        "kacky_color_kk": "positive",
+        "kacky_color_kr": "positive"
     }
 
     default_window = {
@@ -112,6 +154,12 @@ def load_config():
             if key not in config["Window"] or not config["Window"][key].strip():
                 config["Window"][key] = value
 
+    # 레거시 키 보정 (기존 pid/sheet_id -> pid_kk/sheet_id_kk 로 1회 이관)
+    if "pid" in config["Settings"] and not config["Settings"].get("pid_kk"):
+        config["Settings"]["pid_kk"] = config["Settings"].get("pid", "")
+    if "sheet_id" in config["Settings"] and not config["Settings"].get("sheet_id_kk"):
+        config["Settings"]["sheet_id_kk"] = config["Settings"].get("sheet_id", "")
+
     # config 저장
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         config.write(f)
@@ -127,8 +175,7 @@ def load_config():
     for key in default_shortcuts:
         shortcuts[key] = to_tk_format(config["Shortcuts"][key].strip())
 
-    pid_var.set(config["Settings"]["pid"])
-    sheet_id_var.set(config["Settings"]["sheet_id"])
+    event_var.set(config["Settings"]["event"])
 
 def save_config():
     config = configparser.ConfigParser()
@@ -142,13 +189,17 @@ def save_config():
         config["Settings"] = {}
 
     # 기본값 처리 (공백 방지 포함)
-    pid = pid_var.get().strip()
-    sheet_id = sheet_id_var.get().strip()
+    pid = (pid_var.get() or "").strip()
+    sheet_id = (sheet_id_var.get() or "").strip()
     lang = current_language.strip() if current_language else "ko"
 
-    config["Settings"]["pid"] = pid if pid else "0000"
-    config["Settings"]["sheet_id"] = sheet_id if sheet_id else "unknown"
+    ek = get_event_key()
+    config["Settings"]["event"] = event_var.get().strip()
+
+    config["Settings"][f"pid_{ek}"] = pid if pid else "0000"
+    config["Settings"][f"sheet_id_{ek}"] = sheet_id if sheet_id else "unknown"
     config["Settings"]["language"] = lang
+
 
     with open(CONFIG_PATH, "w", encoding="utf-8") as configfile:
         config.write(configfile)
@@ -217,29 +268,33 @@ def load_map_settings():
     config = configparser.ConfigParser()
     if os.path.exists(CONFIG_PATH):
         config.read(CONFIG_PATH, encoding="utf-8")
-        total_maps = config.getint("Rank", "total_maps", fallback=621)
-        kacky_color = config.get("Rank", "kacky_color", fallback="positive").strip().lower()
-        
-        if kacky_color not in ["positive", "negative", "og"]:
-            kacky_color = "positive"
-            config.set("Rank", "kacky_color", "positive")
+        ek = get_event_key()
+        total_maps = config.getint("Rank", f"total_maps_{ek}",
+                                   fallback=config.getint("Rank", "total_maps", fallback=621))
+        kacky_color = config.get("Rank", f"kacky_color_{ek}",
+                                 fallback=config.get("Rank", "kacky_color", fallback="positive")).strip().lower()
 
+        if kacky_color not in ["positive", "negative", "og", "reloaded"]:
+            kacky_color = "positive"
+            config.set("Rank", f"kacky_color_{ek}", "positive")
             with open(CONFIG_PATH, "w", encoding="utf-8") as f:
                 config.write(f)
 
         return total_maps, kacky_color
-
-    return 621, "positive"  # 기본값
+    return 621, "positive"
 
 def get_rank_and_color(count, total, kacky_color="positive"):
     kacky_positive_colors = ["#aa0000", "#aa0000", "#aa6600", "#aaaa00", "#00aa00"]
     kacky_negative_colors = ["#aa0066", "#aa0066", "#aa3300", "#aa6600", "#ff4400"]
     kacky_og_colors = ["#555500", "#bbff00", "#bbff00", "#bbff00", "#555500"]
+    kacky_reloaded_colors = ["#0055aa", "#0099aa", "#66aa00", "#66aa00", "#aaaa00"]
 
     if kacky_color == "og":
         kacky_colors = kacky_og_colors
     elif kacky_color == "negative":
         kacky_colors = kacky_negative_colors
+    elif kacky_color == "reloaded":
+        kacky_colors = kacky_reloaded_colors
     else:
         kacky_colors = kacky_positive_colors
 
@@ -257,10 +312,17 @@ def get_rank_and_color(count, total, kacky_color="positive"):
 
     return ("norank", "#ffffff")
 
+# 이벤트별 현재 값 접근 헬퍼
+def get_active_pid():
+    return (pid_var.get() or "").strip()
+
+def get_active_sheet_id():
+    return (sheet_id_var.get() or "").strip()
+
 # 크롤링 함수
 def fetch_player_data(pid, include_time=False):
     try:
-        url = f"https://kackiestkacky.com/hunting/editions/edition_history.php?pid={pid}&edition=0"
+        url = f"{get_base_domain()}/hunting/editions/edition_history.php?pid={pid}&edition=0"
         headers = {
             "User-Agent": "Mozilla/5.0"
         }
@@ -283,16 +345,24 @@ def fetch_player_data(pid, include_time=False):
         raw_name = "Unknown"
 
         def clean_name(name):
-            return re.sub(r"\$[0-9a-zA-Z]{1,3}", "", name)
+            # 1) 색/스타일 코드 제거: $ + 1~3자리 영숫자
+            name = re.sub(r"\$[0-9a-zA-Z]{1,3}", "", name)
+            # 2) 맵 이름 끝의 [v숫자] 꼬리표 제거 (예: " ... #17 [v2]" → " ... #17")
+            name = re.sub(r"\s*\[v\d+\]\s*$", "", name, flags=re.IGNORECASE)
+            # 3) 공백 정규화 (여러 칸 → 한 칸), 좌우 공백 제거
+            name = re.sub(r"\s+", " ", name).strip()
+            return name
 
         existing_records = {}
-        if include_time and os.path.exists("map_records.txt"):
-            with open("map_records.txt", "r", encoding="utf-8") as f:
-                for line in f:
-                    parts = line.strip().split("\t")
-                    if len(parts) == 3:
-                        map_name, time, rank = parts
-                        existing_records[map_name] = (time, rank)
+        if include_time:
+            mr_path = map_records_path()
+            if os.path.exists(mr_path):
+                with open(mr_path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        parts = line.strip().split("\t")
+                        if len(parts) == 3:
+                            map_name, time, rank = parts
+                            existing_records[map_name] = (time, rank)
 
         update_targets = []
 
@@ -309,9 +379,26 @@ def fetch_player_data(pid, include_time=False):
 
             map_names_raw = parts[0].split(",")
             map_uids = parts[1].split(",")
-            ranks_list = ranks.split(",")
+            ranks_list = normalize_ranks(ranks) # KR의 <br>/개행 대응
 
-            for i in range(min(len(map_names_raw), len(map_uids), len(ranks_list))):
+            # ✅ 길이 검사 + 강제 슬라이싱 (디버깅 로그 포함)
+            count = min(len(map_names_raw), len(map_uids), len(ranks_list))
+            if count == 0:
+                continue  # 데이터 묶음이 비정상인 경우 이 엔트리는 스킵
+
+            if not (len(map_names_raw) == len(map_uids) == len(ranks_list)):
+                log_message(
+                    "script_output",
+                    output=(
+                        f"ℹ️ KR normalize: names={len(map_names_raw)}, "
+                        f"uids={len(map_uids)}, ranks={len(ranks_list)} → use first {count}"
+                    )
+                )
+                map_names_raw = map_names_raw[:count]
+                map_uids = map_uids[:count]
+                ranks_list = ranks_list[:count]
+
+            for i in range(count):
                 check_stop()
 
                 map_name_raw = map_names_raw[i]
@@ -338,7 +425,7 @@ def fetch_player_data(pid, include_time=False):
             for map_name, map_uid, rank, old in update_targets:
                 check_stop()
                 try:
-                    detail_url = f"https://kackiestkacky.com/hunting/editions/maps.php?uid={map_uid}"
+                    detail_url = f"{get_base_domain()}/hunting/editions/maps.php?uid={map_uid}"
                     log_message("accessing", url=detail_url)
                     record = fetch_record_time(pid, map_uid)
                     best_time = record["time"]
@@ -362,8 +449,12 @@ def fetch_player_data(pid, include_time=False):
         clear_count = len(all_records)
 
         log_message("record_save")
-        os.makedirs("records", exist_ok=True)
-        filename = "map_records.txt" if include_time else f"records/{pid}_records.txt"
+        records_dir = os.path.join(BASE_DIR, "records")
+        os.makedirs(records_dir, exist_ok=True)
+        if include_time:
+            filename = map_records_path()  # ✅ 이벤트별 파일 경로 사용 (map_records_kk.txt / map_records_kr.txt)
+        else:
+            filename = os.path.join(records_dir, f"{pid}_records_{get_event_key()}.txt")
         with open(filename, "w", encoding="utf-8") as f:
             for record in all_records:
                 if include_time:
@@ -372,7 +463,7 @@ def fetch_player_data(pid, include_time=False):
                     f.write(f"{record[0]}\t{record[1]}\n")
 
         if include_time:
-            log_message("save_complete")
+            log_message("save_complete", file=os.path.basename(filename))
 
         return clean_player_name, clear_count, all_records
 
@@ -383,8 +474,8 @@ def fetch_player_data(pid, include_time=False):
 # 내 pid일 경우 기록 시간 크롤링
 def fetch_record_time(pid, map_uid):
     try:
-        url = f"https://kackiestkacky.com/hunting/editions/maps.php?uid={map_uid}&raw=1"
-        response = requests.get(url, timeout=10)
+        url = f"{get_base_domain()}/hunting/editions/maps.php?uid={map_uid}&raw=1"
+        response = requests.get(url, timeout=60)
         soup = BeautifulSoup(response.text, "html.parser")
 
         for row in soup.find_all("tr"):
@@ -408,90 +499,88 @@ def fetch_record_time(pid, map_uid):
     return {"rank": 0, "time": 0}
 
 def get_username():
-    config = configparser.ConfigParser()
-    if os.path.exists(CONFIG_PATH):
-        config.read(CONFIG_PATH, encoding="utf-8")
-        pid = config.get("Settings", "pid", fallback="")
-        sheet_id = config.get("Settings", "sheet_id", fallback="")
+    pid = get_active_pid()
+    sheet_id = get_active_sheet_id()
 
-        username_display_label.configure(state="normal")
-        username_display_label.delete("1.0", tk.END)
+    username_display_label.configure(state="normal")
+    username_display_label.delete("1.0", tk.END)
 
-        if pid and sheet_id:
-            try:
-                # ✅ 클리어한 맵 개수 계산
-                clear_count = 0
-                if os.path.exists(MAP_RECORDS_PATH):
-                    with open(MAP_RECORDS_PATH, "r", encoding="utf-8") as file:
-                        clear_count = len([line for line in file if line.strip()])
+    if pid and sheet_id:
+        try:
+            # ✅ 클리어한 맵 개수 계산
+            clear_count = 0
+            mr_path = map_records_path()
+            if os.path.exists(mr_path):
+                with open(mr_path, "r", encoding="utf-8") as f:
+                    clear_count = len([line for line in f if line.strip()])
 
-                # ✅ 전체 맵 수 및 색상 가져오기
-                total_maps, kacky_color = load_map_settings()
-                rank_name, rank_color = get_rank_and_color(clear_count, total_maps, kacky_color)
+            # ✅ 전체 맵 수 및 색상 가져오기
+            total_maps, kacky_color = load_map_settings()
+            rank_name, rank_color = get_rank_and_color(clear_count, total_maps, kacky_color)
 
-                if rank_name == "kacky" and isinstance(rank_color, list):
-                    symbols = ["["] + list(str(clear_count)) + ["]", " "]
-                    for i, char in enumerate(symbols):
-                        color = rank_color[min(i, len(rank_color) - 1)]
-                        tag_name = f"rank_{i}"
-                        username_display_label.tag_configure(tag_name, foreground=color, font=("Arial", 14, "bold"))
-                        username_display_label.insert(tk.END, char, tag_name)
-                else:
-                    tag_name = f"rank_tag"
-                    username_display_label.tag_configure(tag_name, foreground=rank_color, font=("Arial", 14, "bold"))
-                    username_display_label.insert(tk.END, f"[{clear_count}] ", tag_name)
+            if rank_name == "kacky" and isinstance(rank_color, list):
+                symbols = ["["] + list(str(clear_count)) + ["]", " "]
+                for i, char in enumerate(symbols):
+                    color = rank_color[min(i, len(rank_color) - 1)]
+                    tag_name = f"rank_{i}"
+                    username_display_label.tag_configure(tag_name, foreground=color, font=("Arial", 14, "bold"))
+                    username_display_label.insert(tk.END, char, tag_name)
+            else:
+                tag_name = f"rank_tag"
+                username_display_label.tag_configure(tag_name, foreground=rank_color, font=("Arial", 14, "bold"))
+                username_display_label.insert(tk.END, f"[{clear_count}] ", tag_name)
 
-                # ✅ 유저 페이지 파싱
-                url = f"https://kackiestkacky.com/hunting/editions/players.php?pid={pid}&edition=0"
-                response = requests.get(url, timeout=10)
-                soup = BeautifulSoup(response.text, "html.parser")
-                h4 = soup.find("h4", class_="text-center padding-top")
+            # ✅ 유저 페이지 파싱
+            url = f"{get_base_domain()}/hunting/editions/players.php?pid={pid}&edition=0"
+            response = requests.get(url, timeout=10)
+            soup = BeautifulSoup(response.text, "html.parser")
+            h4 = soup.find("h4", class_="text-center padding-top")
 
-                if h4:
-                    if all(isinstance(child, str) for child in h4.contents):
-                        full_text = h4.get_text(strip=True)
-                        if "on All Editions" in full_text:
-                            clean_name = full_text.split("on All Editions")[0].strip()
-                        else:
-                            clean_name = full_text.strip()
-                        username_display_label.insert(tk.END, clean_name)
+            if h4:
+                if all(isinstance(child, str) for child in h4.contents):
+                    full_text = h4.get_text(strip=True)
+                    if "on All Editions" in full_text:
+                        clean_name = full_text.split("on All Editions")[0].strip()
                     else:
-                        for i, part in enumerate(h4.contents):
-                            if isinstance(part, str):
-                                if "on All Editions" in part:
-                                    break
-                                username_display_label.insert(tk.END, part)
-                            elif part.name == "span":
-                                style = part.get("style", "")
-                                color_match = re.search(r"color:(#[0-9a-fA-F]{6})", style)
-                                color = color_match.group(1) if color_match else "#000000"
-                                weight = "bold" if "font-weight:bold" in style else "normal"
-                                slant = "italic" if "font-style:italic" in style else "roman"
-
-                                tag_name = f"color{i}"
-                                username_display_label.tag_configure(
-                                    tag_name,
-                                    foreground=color,
-                                    font=("Arial", 14, weight, slant)
-                                )
-                                username_display_label.insert(tk.END, part.get_text(), tag_name)
-
-                    username_display_label.tag_add("center", "1.0", "end")
-                    username_display_label.tag_configure("center", justify="center")
+                        clean_name = full_text.strip()
+                    username_display_label.insert(tk.END, clean_name)
                 else:
-                    username_display_label.insert(tk.END, "Unknown")
-                    username_display_label.tag_add("center", "1.0", "end")
-                    username_display_label.tag_configure("center", justify="center")
+                    for i, part in enumerate(h4.contents):
+                        if isinstance(part, str):
+                            if "on All Editions" in part:
+                                break
+                            username_display_label.insert(tk.END, part)
+                        elif part.name == "span":
+                            style = part.get("style", "")
+                            color_match = re.search(r"color:(#[0-9a-fA-F]{6})", style)
+                            color = color_match.group(1) if color_match else "#000000"
+                            weight = "bold" if "font-weight:bold" in style else "normal"
+                            slant = "italic" if "font-style:italic" in style else "roman"
 
-            except Exception as e:
-                username_display_label.insert(tk.END, "Failed to load nickname")
-                username_display_label.configure(state="disabled")
-        else:
-            username_display_label.insert(tk.END, "Not set")
-            username_display_label.tag_add("center", "1.0", "end")
-            username_display_label.tag_configure("center", justify="center")
+                            tag_name = f"color{i}"
+                            username_display_label.tag_configure(
+                                tag_name,
+                                foreground=color,
+                                font=("Arial", 14, weight, slant)
+                            )
+                            username_display_label.insert(tk.END, part.get_text(), tag_name)
 
-        username_display_label.configure(state="disabled")
+                username_display_label.tag_add("center", "1.0", "end")
+                username_display_label.tag_configure("center", justify="center")
+            else:
+                username_display_label.insert(tk.END, "Unknown")
+                username_display_label.tag_add("center", "1.0", "end")
+                username_display_label.tag_configure("center", justify="center")
+
+        except Exception as e:
+            username_display_label.insert(tk.END, "Failed to load nickname")
+            username_display_label.configure(state="disabled")
+    else:
+        username_display_label.insert(tk.END, "Not set")
+        username_display_label.tag_add("center", "1.0", "end")
+        username_display_label.tag_configure("center", justify="center")
+
+    username_display_label.configure(state="disabled")
 
 running_process = None  # 실행 중인 프로세스를 저장할 변수
 
@@ -515,41 +604,24 @@ def check_stop():
         raise InterruptedError("🛑 The script was interrupted by the user.")
 
 def get_maps():
-    config = configparser.ConfigParser()
-    if os.path.exists("config.ini"):
-        config.read("config.ini", encoding="utf-8")
-        pid = config.get("Settings", "pid", fallback="")
-        if pid:
-            result = fetch_player_data(pid, include_time=True)
-            return result
+    pid = get_active_pid()
+    if pid:
+        return fetch_player_data(pid, include_time=True)
 
 def check_list():
     global script_should_stop, stopped_logged
     check_stop()
 
-    # config.ini 파일 읽기
-    config = configparser.ConfigParser()
-    config.read("config.ini")
-    sheet_id = config.get("Settings", "sheet_id", fallback="")
+    sheet_id = get_active_sheet_id()
+    mr_path = map_records_path()
 
-    with open("map_records.txt", "r", encoding="utf-8") as file:
-        map_records_content = file.read()
-
-    payload = {
-        "map_records": map_records_content,
-        "sheet_id": sheet_id
-    }
-
-    check_stop()
-
-    # GAS 웹 앱 호출
     log_message("send_request")
 
-    if not os.path.exists(MAP_RECORDS_PATH):
-        log_message("script_output", output="❌ map_records.txt is missing!")
+    if not os.path.exists(mr_path):
+        log_message("script_output", output=f"❌ {os.path.basename(mr_path)} is missing!")
         return
 
-    with open(MAP_RECORDS_PATH, "r", encoding="utf-8") as file:
+    with open(mr_path, "r", encoding="utf-8") as file:
         map_records_content = file.read()
 
     payload = {
@@ -564,7 +636,7 @@ def check_list():
         "Content-Type": "application/json"
     }
 
-    webhook_url = "https://script.google.com/macros/s/AKfycbz85L5C0_51IRfgD5MDD9YpAu9L4o_hJUUBzVug3j0InI-0FP-IleZJzAGxdmcAYHSp/exec"
+    webhook_url = "https://script.google.com/macros/s/AKfycbzFcmEkxBsfPFiPZQxF5Mh0c3GjMYHyk3l7tcTaAlcOunOWttIKxO89ZHi4oaJgr5xc/exec"
 
     response = requests.post(webhook_url, json=payload, headers=headers)  # headers 추가
 
@@ -577,16 +649,9 @@ def check_list():
         log_message("response", response_text=response.text)
 
 def run_scripts():
-    config_file = "config.ini"
-    config = configparser.ConfigParser()
-    if os.path.exists(config_file):
-        config.read(config_file, encoding="utf-8")
-        pid = config.get("Settings", "pid", fallback=None)
-        sheet_id = config.get("Settings", "sheet_id", fallback=None)
-        log_message("load_complete", pid=pid, sheet_id=sheet_id)
-    else:
-        log_message("no_settings")
-        pid, sheet_id = None, None
+    pid = get_active_pid()
+    sheet_id = get_active_sheet_id()
+    log_message("load_complete", pid=pid, sheet_id=sheet_id)
 
     global script_should_stop, stopped_logged
     script_should_stop = False
@@ -616,6 +681,17 @@ def open_readme():
             translations[current_language]["readme_missing"]
         )
 
+# config.ini 열기
+def open_config():
+    """config.ini 파일을 메모장에서 엶"""
+    if os.path.exists(CONFIG_PATH):
+        subprocess.Popen(["notepad.exe", CONFIG_PATH])
+    else:
+        messagebox.showerror(
+            translations[current_language]["error"],
+            "config.ini file does not exist." if current_language == "en" else "config.ini 파일이 존재하지 않습니다."
+        )
+
 # 구글 시트 열기
 def open_google_sheet():
     """Sheet ID 값을 기반으로 구글 시트 링크를 엶"""
@@ -634,9 +710,9 @@ def open_user_page():
     pid = pid_var.get().strip()  # ✅ PID 입력값 가져오기
 
     if pid:  # ✅ PID 값이 있는 경우 → 유저 페이지 열기
-        url = f"https://kackiestkacky.com/hunting/editions/players.php?pid={pid}&edition=0"
+        url = f"{get_base_domain()}/hunting/editions/players.php?pid={pid}&edition=0"
     else:  # ✅ PID 값이 없는 경우 → 기본 페이지 열기
-        url = "https://kackiestkacky.com/"
+        url = get_base_domain() + "/"
 
     webbrowser.open(url)  # ✅ 웹사이트 열기
 
@@ -749,11 +825,10 @@ def open_friend_list():
 
 def load_friends():
     config = configparser.ConfigParser()
-    if not os.path.exists(FRIENDS_PATH):
+    if not os.path.exists(friends_path()):
         log_message("script_output", output="❌ friends.ini is missing!")
         return []
-
-    config.read(FRIENDS_PATH, encoding="utf-8")
+    config.read(friends_path(), encoding="utf-8")
     friends = []
 
     log_message("friends_ini_loaded")
@@ -788,6 +863,7 @@ def add_friend(listbox=None, parent_popup=None):
     def confirm_add():
         pid = pid_entry.get().strip()
         sheet_id = sheet_entry.get().strip()
+        ek = get_event_key()
 
         if not pid:
             messagebox.showwarning(title_translations[current_language]["warning"], message_translations[current_language]["pid_required"], parent=add_window)
@@ -795,22 +871,23 @@ def add_friend(listbox=None, parent_popup=None):
 
         # ✅ 현재 config.ini의 pid와 중복 확인
         config_main = configparser.ConfigParser()
-        if os.path.exists("config.ini"):
-            config_main.read("config.ini", encoding="utf-8")
-            current_pid = config_main.get("Settings", "pid", fallback="")
+        if os.path.exists(CONFIG_PATH):
+            config_main.read(CONFIG_PATH, encoding="utf-8")
+            ek = get_event_key()
+            current_pid = config_main.get("Settings", f"pid_{ek}", fallback="")
             if pid == current_pid:
                 messagebox.showwarning(title_translations[current_language]["warning"], message_translations[current_language]["already_added"], parent=add_window)
                 return
 
         # ✅ 중복 추가 방지
         config = configparser.ConfigParser()
-        if os.path.exists("friends.ini"):
-            config.read("friends.ini", encoding="utf-8")
+        if os.path.exists(friends_path()):
+            config.read(friends_path(), encoding="utf-8")
             if pid in config.sections():
                 messagebox.showwarning(title_translations[current_language]["warning"], message_translations[current_language]["already_added"], parent=add_window)
                 return
 
-        record_path = os.path.join("records", f"{pid}_records.txt")
+        record_path = os.path.join("records", f"{pid}_records_{ek}.txt")
 
         # ✅ 이름은 항상 BeautifulSoup으로 가져오기
         name = get_friend_name(pid)
@@ -819,7 +896,7 @@ def add_friend(listbox=None, parent_popup=None):
             return
 
         # ✅ 기록 파일이 있으면 개수만 계산, 없으면 셀레니움 실행
-        record_path = os.path.join("records", f"{pid}_records.txt")
+        record_path = os.path.join("records", f"{pid}_records_{ek}.txt")
         if os.path.exists(record_path):
             with open(record_path, "r", encoding="utf-8") as f:
                 lines = [line.strip() for line in f if line.strip()]
@@ -833,15 +910,15 @@ def add_friend(listbox=None, parent_popup=None):
 
         # ✅ friends.ini 저장
         config = configparser.ConfigParser()
-        if os.path.exists("friends.ini"):
-            config.read("friends.ini", encoding="utf-8")
+        if os.path.exists(friends_path()):
+            config.read(friends_path(), encoding="utf-8")
         config[pid] = {
             "pid": pid,
             "name": name,
             "clear_count": str(clear_count),
             "sheet_id": sheet_id
         }
-        with open("friends.ini", "w", encoding="utf-8") as f:
+        with open(friends_path(), "w", encoding="utf-8") as f:
             config.write(f)
 
         # ✅ listbox에 직접 추가
@@ -892,10 +969,10 @@ def remove_friend(listbox, popup=None):
 
         # friends.ini에서 삭제
         config = configparser.ConfigParser()
-        config.read("friends.ini", encoding="utf-8")
+        config.read(friends_path(), encoding="utf-8")
         if pid in config.sections():
             config.remove_section(pid)
-            with open("friends.ini", "w", encoding="utf-8") as f:
+            with open(friends_path(), "w", encoding="utf-8") as f:
                 config.write(f)
 
         # 내부 리스트와 UI에서 삭제
@@ -908,7 +985,7 @@ def open_sheet(sheet_id):
 
 def open_userpage(pid):
     if pid:
-        webbrowser.open(f"https://kackiestkacky.com/hunting/editions/players.php?pid={pid}&edition=0")
+        webbrowser.open(f"{get_base_domain()}/hunting/editions/players.php?pid={pid}&edition=0")
 
 def compare_friend(friend, listbox=None, idx=None):
     pid = friend.get("pid")
@@ -963,8 +1040,8 @@ def compare_friend(friend, listbox=None, idx=None):
 
     # 비교 결과 계산 함수
     def compare_with_friend(friend_pid):
-        my_records = load_records("map_records.txt")
-        friend_records = load_records(f"records/{friend_pid}_records.txt")
+        my_records = load_records(map_records_path())
+        friend_records = load_records(f"records/{friend_pid}_records_{get_event_key()}.txt")
 
         friend_maps = set(friend_records.keys())
         my_maps = set(my_records.keys())
@@ -1056,11 +1133,11 @@ def compare_friend(friend, listbox=None, idx=None):
 
         # friends.ini 갱신
         config = configparser.ConfigParser()
-        config.read("friends.ini", encoding="utf-8")
+        config.read(friends_path(), encoding="utf-8")
         if pid in config:
             config[pid]["name"] = name_got
             config[pid]["clear_count"] = str(clear_count)
-            with open("friends.ini", "w", encoding="utf-8") as f:
+            with open(friends_path(), "w", encoding="utf-8") as f:
                 config.write(f)
 
         # 친구 목록 UI 갱신
@@ -1092,7 +1169,7 @@ def compare_friend(friend, listbox=None, idx=None):
 
 def get_friend_name(pid):
     try:
-        url = f"https://kackiestkacky.com/hunting/editions/players.php?pid={pid}&edition=0"
+        url = f"{get_base_domain()}/hunting/editions/players.php?pid={pid}&edition=0"
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, "html.parser")
         h4 = soup.find("h4", class_="text-center padding-top")
@@ -1127,7 +1204,8 @@ title_translations = {
 
 translations = {
     "ko": {
-        "title": "KK Dashboard Automator",
+        "title": "Kacky Dashboard Automator",
+        "event_label": "이벤트:",
         "pid_label": "PID:",
         "sheet_label": "Sheet ID:",
         "save_btn": "저장",
@@ -1153,7 +1231,8 @@ translations = {
         "refresh_btn": "🔄 이름 + 맵 갱신"
     },
     "en": {
-        "title": "KK Dashboard Automator",
+        "title": "Kacky Dashboard Automator",
+        "event_label": "Event:",
         "pid_label": "PID:",
         "sheet_label": "Sheet ID:",
         "save_btn": "Save",
@@ -1204,7 +1283,7 @@ log_translations = {
         "record_updated": "✅ {map_name} 기록 갱신됨: {best_time} (랭크: {current_rank})\n",
         "record_same": "✅ {map_name} 기존 기록과 동일함\n",
         "record_save": "📂 갱신된 기록 저장 중...",
-        "save_complete": "✅ 모든 기록이 map_records.txt에 저장됨.\n",
+        "save_complete": "✅ 모든 기록이 {file}에 저장됨.\n",
         "map_uid_collected": "🔹 {count}개의 갱신된 클리어 맵 UID 수집 완료.\n",
         "dropdown_not_found": "⚠️ 드롭다운을 찾지 못함. 기본 10개 기록만 가져옴.",
         "record_not_found": "⚠️ {map_name} 기록 찾기 실패: {error}",
@@ -1232,7 +1311,7 @@ log_translations = {
         "install_failed": "❌ 라이브러리 설치 실패: {e}",
         "all_installed": "✅ 모든 필수 라이브러리가 설치되어 있습니다.",
         "env_check_complete": "✅ 환경 점검 완료!",
-        "map_records_missing": "❌ map_records.txt가 없습니다!",
+        "map_records_missing": "❌ {file}가 없습니다!",
         "readme_missing": "README.txt 파일이 존재하지 않습니다.",
         "friends_ini_loaded": "📂 friends.ini 로드됨",
         "friend_load_failed": "⚠️ 친구 로딩 실패 ({section}): {error}",
@@ -1262,7 +1341,7 @@ log_translations = {
         "record_updated": "✅ {map_name} record updated: {best_time} (Rank: {current_rank})\n",
         "record_same": "✅ {map_name} is same as previous record\n",
         "record_save": "📂 Saving updated records...",
-        "save_complete": "✅ All records saved to map_records.txt.\n",
+        "save_complete": "✅ All records saved to {file}.\n",
         "map_uid_collected": "🔹 Collected {count} updated cleared map UIDs.\n",
         "dropdown_not_found": "⚠️ Could not find dropdown. Fetching only 10 default records.",
         "record_not_found": "⚠️ Failed to find record for {map_name}: {error}",
@@ -1290,7 +1369,7 @@ log_translations = {
         "install_failed": "❌ Failed to install libraries: {e}",
         "all_installed": "✅ All required libraries are installed.",
         "env_check_complete": "✅ Environment check complete!",
-        "map_records_missing": "❌ map_records.txt does not exist!",
+        "map_records_missing": "❌ {file} does not exist!",
         "readme_missing": "README.txt file does not exist.",
         "friends_ini_loaded": "📂 friends.ini loaded",
         "friend_load_failed": "⚠️ Failed to load friend ({section}): {e}",
@@ -1350,6 +1429,7 @@ def switch_language():
 
     # UI 요소 텍스트 변경
     root.title(translations[current_language]["title"])
+    event_label.config(text=translations[current_language]["event_label"])
     pid_label.config(text=translations[current_language]["pid_label"])
     sheet_label.config(text=translations[current_language]["sheet_label"])
     save_btn.config(text=translations[current_language]["save_btn"])
@@ -1453,6 +1533,7 @@ def position_bottom_left(widget, x_offset=10, y_offset=44):
         height = root.winfo_height()
         lang_btn.place(x=10, y=height - 44)
         stop_btn.place(x=50, y=height - 44)
+        set_btn.place(x=335, y=height - 44)
     root.bind("<Configure>", update_position)
     root.after(100, update_position)
 
@@ -1497,7 +1578,7 @@ root = tk.Tk()
 load_window_position()
 load_shortcuts()
 root.title(translations[current_language]["title"])
-root.geometry("820x382")
+root.geometry("820x383")
 
 # 창 아이콘 변경
 if os.path.exists(ICON_PATH):
@@ -1514,6 +1595,11 @@ if os.path.exists(STOP_IMG_PATH):
 else:
     stop_img = None
 
+if os.path.exists(SET_IMG_PATH):
+    set_img = ImageTk.PhotoImage(Image.open(SET_IMG_PATH))
+else:
+    set_img = None
+
 # frame 선언
 top_frame = ttk.Frame(root, padding=10)
 top_frame.grid(row=0, column=0, sticky="nw")
@@ -1521,7 +1607,7 @@ top_frame.grid(row=0, column=0, sticky="nw")
 # 로고 추가
 logo_img = get_logo()
 logo_label = tk.Label(top_frame, image=logo_img)
-logo_label.grid(row=0, column=0, columnspan=2, pady=(0, 10), sticky="n")
+logo_label.grid(row=0, column=0, columnspan=2, sticky="n")
 
 # 닉네임 표시 라벨
 username_display_label = tk.Text(
@@ -1540,18 +1626,38 @@ username_display_label.tag_configure("center", justify='center')
 username_display_label.tag_add("center", "1.0", "end")
 
 # 설정 입력 필드
+event_var = tk.StringVar(value=EVENT_OPTIONS[0])
 pid_var = tk.StringVar()
 sheet_id_var = tk.StringVar()
 
+event_label = ttk.Label(top_frame, text=translations[current_language]["event_label"])
+event_label.grid(row=2, column=0, sticky="w", pady=(0, 15))
+
+event_combo = ttk.Combobox(top_frame, textvariable=event_var, values=EVENT_OPTIONS, state="readonly", width=32)
+event_combo.grid(row=2, column=1, sticky="w", pady=(0, 15))
+
+def hydrate_fields_from_event(*_):
+    ek = get_event_key()
+    cfg = configparser.ConfigParser()
+    if os.path.exists(CONFIG_PATH):
+        cfg.read(CONFIG_PATH, encoding="utf-8")
+    pid_var.set(cfg.get("Settings", f"pid_{ek}", fallback=""))
+    sheet_id_var.set(cfg.get("Settings", f"sheet_id_{ek}", fallback=""))
+    get_username()
+
+event_var.trace_add("write", hydrate_fields_from_event)
+event_combo.bind("<<ComboboxSelected>>", lambda e: hydrate_fields_from_event())
+hydrate_fields_from_event()
+
 pid_label = ttk.Label(top_frame, text=translations[current_language]["pid_label"])
-pid_label.grid(row=2, column=0, sticky="w")
+pid_label.grid(row=3, column=0, sticky="w")
 
 sheet_label = ttk.Label(top_frame, text=translations[current_language]["sheet_label"])
-sheet_label.grid(row=3, column=0, sticky="w")
+sheet_label.grid(row=4, column=0, sticky="w")
 
 # Entry들과 버튼을 담는 프레임 (한 덩어리로)
 input_frame = ttk.Frame(top_frame)
-input_frame.grid(row=2, column=1, rowspan=2, sticky="w")
+input_frame.grid(row=3, column=1, rowspan=2, sticky="w")
 
 pid_entry = ttk.Entry(input_frame, textvariable=pid_var, width=26)
 pid_entry.grid(row=0, column=0, sticky="w", pady=(0, 2))
@@ -1590,6 +1696,10 @@ ToolTip(lang_btn, lambda: "언어 변경" if current_language == "en" else "Chan
 stop_btn = ttk.Button(root, image=stop_img, command=stop_script)
 position_bottom_left(stop_btn, x_offset=50, y_offset=44)
 ToolTip(stop_btn, lambda: "스크립트 중단" if current_language == "ko" else "Stop Script")
+
+set_btn = ttk.Button(root, image=set_img, command=open_config)
+set_btn.place(x=90, y=root.winfo_height() - 44)
+ToolTip(set_btn, lambda: "설정 파일 열기" if current_language == "ko" else "Open config.ini")
 
 # 로그 창
 log_text = scrolledtext.ScrolledText(root, height=20, width=70, state="normal")
