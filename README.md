@@ -17,30 +17,33 @@ It also includes features such as accessing user pages, connecting to the LIS sp
 > <a href="https://www.flaticon.com/kr/free-icon/globe_12871678?term=%EC%A7%80%EA%B5%AC&page=1&position=25&origin=tag&related_id=12871678" title="globe">globe: SumberRejeki - Flaticon</a>  
 > <a href="https://www.flaticon.com/kr/free-icon/settings_667416" title="settings">settings: Freepik - Flaticon</a>
 
+### Installation
+Download the latest `Kacky-Dashboard-Automator.zip` file from the **Release** tab on the left and extract it.
+
 ## How to use
 ### Get the pid
 1. Go to the Kacky website and search for your nickname (or find it manually)  
 > https://kackiestkacky.com or https://kackyreloaded.com
 
 2. Open your user profile and copy the corresponding pid  
-> https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0  
+`https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0`
 > OOOO is your pid.
 
 3. Enter the pid in the program.
 
 ### Get the SHEET_ID
-1. Open the Kackiest Kacky Dashboard Google Sheet link
+1. Click the `Open Dashboard` button in the program or access the link below directly.
 > [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
 > [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
 
-2. Make a copy of the Google Sheet.
-> File - Make a copy
+2. Make a copy of the Google Sheet.  
+`File - Make a copy`
 
 3. Click the Share button and change access permissions to **Anyone with the link**.  
 Then change the role to **Editor**.
 
-4. Copy the part of the URL corresponding to the SHEET ID
-> https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing  
+4. Copy the part of the URL corresponding to the SHEET ID  
+`https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing`
 
 5. Enter the SHEET ID in the program.
 
@@ -52,24 +55,23 @@ Then change the role to **Editor**.
 > https://kackiestkacky.com 또는 https://kackyreloaded.com
 
 2. 유저 프로필을 열고 해당 PID를 복사합니다.  
-> https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0  
+`https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0`
 > OOOO는 당신의 PID입니다.
 
 3. 프로그램에 PID를 입력합니다.
 
 ### SHEET_ID 가져오기
-1. Kackiest Kacky Dashboard Google 시트 링크를 엽니다.  
-> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
-> [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
+1. 프로그램에서 `대시보드 열기` 버튼을 누르거나, 아래 링크에 직접 접속합니다.  
+> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346) 또는 [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
 
-2. Google 시트를 복사합니다.  
-> 파일 - 사본 만들기
+2. Google 시트를 복사합니다.    
+`파일 - 사본 만들기`
 
 3. **공유** 버튼을 눌러 접근 권한을 **링크가 있는 모든 사용자**로 변경합니다.  
 그다음 역할을 **편집자**로 바꿉니다.
 
 4. URL 중 SHEET ID에 해당하는 부분을 복사합니다.  
-> https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing  
+`https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing`
 
 5. 프로그램에 SHEET ID를 입력합니다.
 
