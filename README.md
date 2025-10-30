@@ -4,15 +4,73 @@ https://github.com/user-attachments/assets/3290196c-27ca-4681-aa07-b364f1e01e16
 An automated tool to transfer records from **Kacky Event** in Trackmania to Google Sheets.
 
 ## Description
-[https://kackiestkacky.com](https://kackiestkacky.com)와 [https://kackyreloaded.com](https://kackyreloaded.com)에서 사용자의 이름, 클리어한 맵, 랭킹, 기록 데이터를 가져온 후, 구글 시트에 데이터를 자동으로 입력해주는 프로그램입니다.
+It is a program that retrieves a user's name, cleared maps, ranking, and record data from [https://kackiestkacky.com](https://kackiestkacky.com) and [https://kackyreloaded.com](https://kackyreloaded.com), then automatically inputs the data into a Google Sheet.
+It also includes features such as accessing user pages, connecting to the LIS spreadsheet, and comparing rankings with friends.
 
-그 외에도 유저페이지 접속 기능, LIS 스프레드 시트 접속, 친구와 랭킹 비교 기능을 갖추고 있습니다.
-
-> 구글 시트는 Zemus42가 만든 구글 시트를 사용하고 있습니다.
-> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)
+### Source
+#### Spreadsheet (by. Zemus42)
+> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
 > [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
 
-> 아이콘 출처
-> <a href="https://www.flaticon.com/kr/free-icons/" title="아시아 아이콘">아시아 아이콘 제작자: Kalashnyk - Flaticon</a>
-> <a href="https://www.flaticon.com/kr/free-icons/-" title="- 아이콘">- 아이콘 제작자: SumberRejeki - Flaticon</a>
-> <a href="https://www.flaticon.com/kr/free-icons/" title="설정 아이콘">설정 아이콘 제작자: Freepik - Flaticon</a>
+#### Icon
+> <a href="https://www.flaticon.com/kr/free-icon/stop-button_4340168?related_id=4340168" title="stop-button">stop-button: Kalashnyk - Flaticon</a>  
+> <a href="https://www.flaticon.com/kr/free-icon/globe_12871678?term=%EC%A7%80%EA%B5%AC&page=1&position=25&origin=tag&related_id=12871678" title="globe">globe: SumberRejeki - Flaticon</a>  
+> <a href="https://www.flaticon.com/kr/free-icon/settings_667416" title="settings">settings: Freepik - Flaticon</a>
+
+## How to use
+### Get the pid
+1. Go to the Kacky website and search for your nickname (or find it manually)  
+> https://kackiestkacky.com or https://kackyreloaded.com
+
+2. Open your user profile and copy the corresponding pid  
+> https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0  
+> OOOO is your pid.
+
+3. Enter the pid in the program.
+
+### Get the SHEET_ID
+1. Open the Kackiest Kacky Dashboard Google Sheet link
+> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
+> [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
+
+2. Make a copy of the Google Sheet.
+> File - Make a copy
+
+3. Click the Share button and change access permissions to **Anyone with the link**.  
+Then change the role to **Editor**.
+
+4. Copy the part of the URL corresponding to the SHEET ID
+> https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing  
+
+5. Enter the SHEET ID in the program.
+
+6. Click the run button.
+
+## 사용 방법
+### PID 가져오기
+1. Kacky 웹사이트에 접속하여 자신의 닉네임을 검색하거나 수동으로 찾습니다.  
+> https://kackiestkacky.com 또는 https://kackyreloaded.com
+
+2. 유저 프로필을 열고 해당 PID를 복사합니다.  
+> https://kackiestkacky.com/hunting/editions/players.php?pid=OOOO&edition=0  
+> OOOO는 당신의 PID입니다.
+
+3. 프로그램에 PID를 입력합니다.
+
+### SHEET_ID 가져오기
+1. Kackiest Kacky Dashboard Google 시트 링크를 엽니다.  
+> [Kackiest Kacky (TMNF) Dashboard](https://docs.google.com/spreadsheets/d/1G44h9PAHVSKkYwD4ek_v6WpI696QPMAJPo1dMVi1IdM/edit?gid=92899346#gid=92899346)  
+> [Kacky Reloaded (TM2020) Dashboard](https://docs.google.com/spreadsheets/d/1KoqfsvTzuKrHSlHEV9SBYpLdJLxni0lkM3P3NB_fOcg/edit?gid=92899346#gid=92899346)
+
+2. Google 시트를 복사합니다.  
+> 파일 - 사본 만들기
+
+3. **공유** 버튼을 눌러 접근 권한을 **링크가 있는 모든 사용자**로 변경합니다.  
+그다음 역할을 **편집자**로 바꿉니다.
+
+4. URL 중 SHEET ID에 해당하는 부분을 복사합니다.  
+> https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit?usp=sharing  
+
+5. 프로그램에 SHEET ID를 입력합니다.
+
+6. 실행 버튼을 클릭합니다.
